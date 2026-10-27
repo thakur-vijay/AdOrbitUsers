@@ -8,15 +8,18 @@ import (
 
 type Config struct {
 	Port         string
+	GRPCPort     string
 	DatabaseURL  string
 	JWTPublicKey string
 }
 
 func Load() (*Config, error) {
 	port := normalizePort(getEnv("APP_PORT", "8080"))
+	GRPCPort := normalizePort(getEnv("GRPC_PORT", "9090"))
 
 	cfg := &Config{
 		Port:         port,
+		GRPCPort:     GRPCPort,
 		DatabaseURL:  getEnv("DATABASE_URL", ""),
 		JWTPublicKey: strings.ReplaceAll(os.Getenv("JWT_PUBLIC_KEY"), `\n`, "\n"),
 	}

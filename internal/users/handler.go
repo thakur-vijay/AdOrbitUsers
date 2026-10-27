@@ -2,9 +2,6 @@ package users
 
 import (
 	"net/http"
-
-	"github.com/thakur-vijay/adorbit-go/apperrors"
-	"github.com/thakur-vijay/adorbit-go/response"
 )
 
 type Handler struct {
@@ -16,12 +13,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var signupRequest SignupRequestDTO
-	if err := response.DecodeJSONAndValidate(r, &signupRequest); err != nil {
-		appError := apperrors.NewBadRequest(err.Error(), nil)
-		response.Write(w, appError.StatusCode, appError.Message)
-		return
-	}
+
 }
 
 func (h *Handler) Fetch(w http.ResponseWriter, r *http.Request) {

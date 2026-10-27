@@ -7,12 +7,15 @@ import (
 
 	"github.com/adorbit/users/internal/config"
 	"github.com/adorbit/users/internal/database"
+	"github.com/adorbit/users/internal/users"
 	"github.com/thakur-vijay/adorbit-go/apperrors"
 )
 
 type App struct {
-	DB     *sql.DB
-	Router http.Handler
+	DB       *sql.DB
+	Router   http.Handler
+	GRPCPort string
+	UsersSvc *users.Service
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -30,14 +33,16 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	router, err := BuildRouter(db, cfg.JWTPublicKey)
+	router, userService, err := BuildRouter(db, cfg.JWTPublicKey)
 	if err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 
 	return &App{
-		DB:     db,
-		Router: router,
+		DB:       db,
+		Router:   router,
+		UsersSvc: userService,
+		GRPCPort: cfg.GRPCPort,
 	}, nil
 }
