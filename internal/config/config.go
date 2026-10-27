@@ -7,20 +7,26 @@ import (
 )
 
 type Config struct {
-	Port        string
-	DatabaseURL string
+	Port         string
+	DatabaseURL  string
+	JWTPublicKey string
 }
 
 func Load() (*Config, error) {
 	port := normalizePort(getEnv("APP_PORT", "8080"))
 
 	cfg := &Config{
-		Port:        port,
-		DatabaseURL: getEnv("DATABASE_URL", ""),
+		Port:         port,
+		DatabaseURL:  getEnv("DATABASE_URL", ""),
+		JWTPublicKey: strings.ReplaceAll(os.Getenv("JWT_PUBLIC_KEY"), `\n`, "\n"),
 	}
 
 	if cfg.DatabaseURL == "" {
 		return nil, errors.New("DATABASE_URL is not set")
+	}
+
+	if cfg.JWTPublicKey == "" {
+		return nil, errors.New("JWT_PUBLIC_KEY is not set")
 	}
 
 	return cfg, nil

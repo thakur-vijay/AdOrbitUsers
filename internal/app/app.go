@@ -11,9 +11,8 @@ import (
 )
 
 type App struct {
-	DB      *sql.DB
-	Router  http.Handler
-	cleanup func()
+	DB     *sql.DB
+	Router http.Handler
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -31,15 +30,14 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	router, cleanup, err := BuildRouter(db)
+	router, err := BuildRouter(db, cfg.JWTPublicKey)
 	if err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 
 	return &App{
-		DB:      db,
-		Router:  router,
-		cleanup: cleanup,
+		DB:     db,
+		Router: router,
 	}, nil
 }

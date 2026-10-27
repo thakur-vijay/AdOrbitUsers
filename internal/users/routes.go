@@ -9,11 +9,11 @@ import (
 func RegisterRoutes(
 	mux *http.ServeMux,
 	handler *Handler,
-	authMiddleware *middleware.Middleware,
+	jwtMiddleware *middleware.JWTMiddleware,
 ) {
-	mux.Handle("POST /users", authMiddleware.RequireAuth(http.HandlerFunc(handler.Create)))
-	mux.Handle("GET /users", authMiddleware.RequireAuth(http.HandlerFunc(handler.Fetch)))
-	mux.Handle("GET /users/{id}", authMiddleware.RequireAuth(http.HandlerFunc(handler.FetchByID)))
-	mux.Handle("PUT /users/{id}", authMiddleware.RequireAuth(http.HandlerFunc(handler.Update)))
-	mux.Handle("DELETE /users/{id}", authMiddleware.RequireAuth(http.HandlerFunc(handler.Delete)))
+	mux.Handle("POST /users", jwtMiddleware.RequireAuth(http.HandlerFunc(handler.Create)))
+	mux.Handle("GET /users", jwtMiddleware.RequireAuth(http.HandlerFunc(handler.Fetch)))
+	mux.Handle("GET /users/{id}", jwtMiddleware.RequireAuth(http.HandlerFunc(handler.FetchByID)))
+	mux.Handle("PUT /users/{id}", jwtMiddleware.RequireAuth(http.HandlerFunc(handler.Update)))
+	mux.Handle("DELETE /users/{id}", jwtMiddleware.RequireAuth(http.HandlerFunc(handler.Delete)))
 }
