@@ -10,7 +10,43 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - users_postgres_data:/var/lib/postgresql/data
+    networks:
+      - adorbit-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"'
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  users:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adorbit-users
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      APP_PORT: "8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      adorbit-network:
+        aliases:
+          - users
 
 volumes:
-  postgres_data:
+  users_postgres_data:
+
+networks:
+  adorbit-network:
+    external: true
+    name: adorbit-network
