@@ -11,17 +11,19 @@ type Config struct {
 	GRPCPort     string
 	DatabaseURL  string
 	JWTPublicKey string
+	RabbitMQURL  string
 }
 
 func Load() (*Config, error) {
 	port := normalizePort(getEnv("APP_PORT", "8080"))
-	GRPCPort := normalizePort(getEnv("GRPC_PORT", "9090"))
+	grpcPort := normalizePort(getEnv("GRPC_PORT", "9090"))
 
 	cfg := &Config{
 		Port:         port,
-		GRPCPort:     GRPCPort,
+		GRPCPort:     grpcPort,
 		DatabaseURL:  getEnv("DATABASE_URL", ""),
 		JWTPublicKey: strings.ReplaceAll(os.Getenv("JWT_PUBLIC_KEY"), `\n`, "\n"),
+		RabbitMQURL:  getEnv("RABBITMQ_URL", ""),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -30,6 +32,10 @@ func Load() (*Config, error) {
 
 	if cfg.JWTPublicKey == "" {
 		return nil, errors.New("JWT_PUBLIC_KEY is not set")
+	}
+
+	if cfg.RabbitMQURL == "" {
+		return nil, errors.New("RABBITMQ_URL is not set")
 	}
 
 	return cfg, nil

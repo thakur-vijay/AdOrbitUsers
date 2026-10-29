@@ -12,7 +12,9 @@ services:
     volumes:
       - users_postgres_data:/var/lib/postgresql/data
     networks:
-      - adorbit-network
+      adorbit-network:
+        aliases:
+          - users-postgres
     healthcheck:
       test:
         - CMD-SHELL
@@ -25,16 +27,21 @@ services:
   users:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: adorbit-users
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
-      APP_PORT: "8080"
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@users-postgres:5432/${POSTGRES_DB}?sslmode=disable"
+      APP_PORT: "${APP_PORT:-8080}"
+      RABBITMQ_URL: "${RABBITMQ_URL}"
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
+      - "9090:9090"
+    volumes:
+      - .:/app
+      - /app/tmp
     depends_on:
       postgres:
         condition: service_healthy

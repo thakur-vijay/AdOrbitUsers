@@ -7,6 +7,7 @@ import (
 
 	"github.com/adorbit/users/internal/config"
 	"github.com/adorbit/users/internal/database"
+	"github.com/adorbit/users/internal/messaging"
 	"github.com/adorbit/users/internal/users"
 	"github.com/thakur-vijay/adorbit-go/apperrors"
 )
@@ -16,6 +17,8 @@ type App struct {
 	Router   http.Handler
 	GRPCPort string
 	UsersSvc *users.Service
+	RabbitMQ *messaging.RabbitMQ
+	Consumer *messaging.Consumer
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -39,10 +42,20 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
+	rabbitMQ, err := messaging.NewRabbitMQ(cfg.RabbitMQURL)
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	consumer := messaging.NewConsumer(rabbitMQ, userService)
+
 	return &App{
 		DB:       db,
 		Router:   router,
 		UsersSvc: userService,
 		GRPCPort: cfg.GRPCPort,
+		RabbitMQ: rabbitMQ,
+		Consumer: consumer,
 	}, nil
 }

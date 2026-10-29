@@ -42,6 +42,16 @@ func (a *App) Run(addr string) error {
 		log.Printf("gRPC server listening on %s", a.GRPCPort)
 		grpcErrors <- grpcServer.Serve(grpcListener)
 	}()
+
+	consumerCtx, cancelConsumer := context.WithCancel(context.Background())
+	defer cancelConsumer()
+
+	consumerErrors := make(chan error, 1)
+
+	go func() {
+		consumerErrors <- a.Consumer.Start(consumerCtx)
+	}()
+
 	httpErrors := make(chan error, 1)
 	go func() {
 		log.Printf("HTTP server listening on %s", addr)
@@ -63,6 +73,12 @@ func (a *App) Run(addr string) error {
 			_ = httpServer.Close()
 			return err
 		}
+	case err := <-consumerErrors:
+		if err != nil {
+			grpcServer.Stop()
+			_ = httpServer.Close()
+			return err
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -75,10 +91,23 @@ func (a *App) Run(addr string) error {
 }
 
 func (a *App) Close() error {
-	if a == nil || a.DB == nil {
+	if a == nil {
 		return nil
 	}
 
-	return a.DB.Close()
+	var firstErr error
 
+	if a.RabbitMQ != nil {
+		if err := a.RabbitMQ.Close(); err != nil {
+			firstErr = err
+		}
+	}
+
+	if a.DB != nil {
+		if err := a.DB.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	return firstErr
 }
