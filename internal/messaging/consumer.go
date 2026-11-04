@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/adorbit/users/internal/users"
+	"github.com/jackc/pgx/v5/pgconn"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -21,8 +22,9 @@ type CreateUserRequest struct {
 }
 
 type CreateUserResponse struct {
-	UserID string `json:"user_id"`
-	Error  string `json:"error,omitempty"`
+	UserID  string `json:"user_id,omitempty"`
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 type Consumer struct {
@@ -100,7 +102,7 @@ func (c *Consumer) handleMessage(
 	response := CreateUserResponse{}
 
 	if err := json.Unmarshal(message.Body, &request); err != nil {
-		response.Error = "invalid request payload"
+		response.Message = "invalid request payload"
 	} else {
 		requestCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
@@ -116,7 +118,18 @@ func (c *Consumer) handleMessage(
 
 		if err != nil {
 			log.Printf("Failed to create user %s: %v", request.UserID, err)
-			response.Error = "failed to create user"
+
+			response.Code = "USER_CREATION_FAILED"
+			response.Message = "Failed to create user"
+
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				switch pgErr.Code {
+				case "23505":
+					response.Code = "USER_ALREADY_EXISTS"
+					response.Message = "User already exists"
+				}
+			}
 		} else {
 			response.UserID = request.UserID
 		}
