@@ -34,16 +34,19 @@ func (r *RabbitMQ) Close() error {
 		return nil
 	}
 
+	var closeErr error
+
 	if r.Channel != nil {
 		if err := r.Channel.Close(); err != nil {
-			_ = r.Connection.Close()
-			return err
+			closeErr = err
 		}
 	}
 
 	if r.Connection != nil {
-		return r.Connection.Close()
+		if err := r.Connection.Close(); err != nil && closeErr == nil {
+			closeErr = err
+		}
 	}
 
-	return nil
+	return closeErr
 }

@@ -38,7 +38,7 @@ func (s *UsersServer) CreateUser(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if err := s.service.Create(ctx, dto); err != nil {
+	if _, err := s.service.Create(ctx, dto); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, status.Error(codes.Canceled, "request canceled")
 		}

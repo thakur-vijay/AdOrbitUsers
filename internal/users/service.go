@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/thakur-vijay/adorbit-go/apperrors"
 )
@@ -18,11 +19,11 @@ func NewService(repository *Repository) *Service {
 	}
 }
 
-func (s *Service) Create(ctx context.Context, dto UserDTO) error {
+func (s *Service) Create(ctx context.Context, dto UserDTO) (*UserDTO, error) {
 	existingUser, err := s.repository.FetchByID(ctx, dto.ID)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return apperrors.NewInternal(
+		return nil, apperrors.NewInternal(
 			"Failed to check existing user",
 			err,
 		)
@@ -32,15 +33,34 @@ func (s *Service) Create(ctx context.Context, dto UserDTO) error {
 		if existingUser.Email != dto.Email ||
 			existingUser.FullName != dto.FullName ||
 			existingUser.Role != dto.Role {
-			return apperrors.NewConflict(
+			return nil, apperrors.NewConflict(
 				"User already exists with different details",
 				nil,
 			)
 		}
 
-		// Same user already exists. Treat as successful retry.
-		return nil
+		return existingUser, nil
 	}
 
-	return s.repository.Create(ctx, dto)
+	if err := s.repository.Create(ctx, dto); err != nil {
+		return nil, err
+	}
+
+	return &dto, nil
+}
+
+func (s *Service) FetchByID(ctx context.Context, userID string) (*UserDTO, error) {
+	userCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	user, err := s.repository.FetchByID(userCtx, userID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperrors.NewNotFound("User not found", err)
+		} else {
+			return nil, err
+		}
+	} else {
+		return user, nil
+	}
 }
